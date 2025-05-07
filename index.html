@@ -47,7 +47,7 @@
         }
         .pumpkin-stats {
             font-size: 11px;
-            background-color: rgba(255, 255, 255, 0.5);
+            background-color: rgba(255, 255, 255, 0.9);
             padding: 3px 6px;
             border-radius: 5px;
             position: absolute;
@@ -133,13 +133,13 @@
         <h1>🎃 Pumpkin Selective Breeding Simulation 🎃</h1>
         
         <div class="instructions">
-            <h3>Goal: Breed the LARGEST, ROUNDEST, SMOOTHEST, and most ORANGE pumpkin in 4 generations!</h3>
+            <h3>Goal: Breed the largest, roundest, SMOOTHEST, and most ORANGE pumpkin in 4 generations!</h3>
             <p>1. Choose two parent pumpkins by clicking on them.</p>
             <p>2. Click "Breed Selected Pumpkins" to create offspring.</p>
             <p>3. The new generation will have traits between those of the parents.</p>
             <p>4. Each pumpkin has 4 traits: Size, Roundness, Smoothness, and Orange Color.</p>
             <p>5. Higher values are better for ALL traits!</p>
-            <p>6. Repeat this process for 4 generations to try and create the best pumpkin!</p>
+            <p>6. Repeat this process for 4 generations to see how artificial selection works!</p>
         </div>
         
         <div class="generations">
@@ -149,6 +149,20 @@
             <div class="generation-indicator">Generation 4</div>
         </div>
         
+        <div class="metrics">
+            <div class="metric">
+                <h3>Best Size: <span id="best-size">0</span></h3>
+            </div>
+            <div class="metric">
+                <h3>Best Roundness: <span id="best-roundness">0</span></h3>
+            </div>
+            <div class="metric">
+                <h3>Best Smoothness: <span id="best-smoothness">0</span></h3>
+            </div>
+            <div class="metric">
+                <h3>Best Orange Color: <span id="best-color">0</span></h3>
+            </div>
+        </div>
         
         <div class="status" id="status-message">Select two parent pumpkins to begin breeding!</div>
         
