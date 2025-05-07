@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pumpkin Selective Breeding Simulation</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #ffe4b5;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            color: #ff6600;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: #fff9e6;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .pumpkin-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .pumpkin {
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-bottom: 30px;
+        }
+        .pumpkin:hover {
+            transform: scale(1.05);
+        }
+        .pumpkin.selected {
+            outline: 4px solid #ff6600;
+            outline-offset: 4px;
+            border-radius: 50%;
+        }
+        .pumpkin-stats {
+            font-size: 11px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 3px 6px;
+            border-radius: 5px;
+            position: absolute;
+            bottom: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            line-height: 1.4;
+            width: 130px;
+            text-align: center;
+        }
+        button {
+            background-color: #ff6600;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            font-family: 'Arial', sans-serif;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #e55c00;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .generations {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .generation-indicator {
+            width: 18%;
+            padding: 5px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .generation-indicator.active {
+            background-color: #ff6600;
+            color: white;
+        }
+        .instructions {
+            background-color: #fffaf0;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .status {
+            font-weight: bold;
+            margin: 15px 0;
+            color: #333;
+        }
+        .metrics {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        .metric {
+            background-color: #fffaf0;
+            padding: 10px;
+            border-radius: 8px;
+            width: 30%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 10px;
+        }
+        .restart {
+            background-color: #4CAF50;
+        }
+        .restart:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎃 Pumpkin Selective Breeding Simulation 🎃</h1>
+        
+        <div class="instructions">
+            <h3>Goal: Breed the largest, roundest, SMOOTHEST, and most ORANGE pumpkin in 4 generations!</h3>
+            <p>1. Choose two parent pumpkins by clicking on them.</p>
+            <p>2. Click "Breed Selected Pumpkins" to create offspring.</p>
+            <p>3. The new generation will have traits between those of the parents.</p>
+            <p>4. Each pumpkin has 4 traits: Size, Roundness, Smoothness, and Orange Color.</p>
+            <p>5. Higher values are better for ALL traits!</p>
+            <p>6. Repeat this process for 4 generations to see how artificial selection works!</p>
+        </div>
+        
+        <div class="generations">
+            <div class="generation-indicator active">Generation 1</div>
+            <div class="generation-indicator">Generation 2</div>
+            <div class="generation-indicator">Generation 3</div>
+            <div class="generation-indicator">Generation 4</div>
+        </div>
+        
+        <div class="metrics">
+            <div class="metric">
+                <h3>Best Size: <span id="best-size">0</span></h3>
+            </div>
+            <div class="metric">
+                <h3>Best Roundness: <span id="best-roundness">0</span></h3>
+            </div>
+            <div class="metric">
+                <h3>Best Smoothness: <span id="best-smoothness">0</span></h3>
+            </div>
+            <div class="metric">
+                <h3>Best Orange Color: <span id="best-color">0</span></h3>
+            </div>
+        </div>
+        
+        <div class="status" id="status-message">Select two parent pumpkins to begin breeding!</div>
+        
+        <div class="pumpkin-container" id="pumpkins"></div>
+        
+        <button id="breed-btn" disabled>Breed Selected Pumpkins</button>
+        <button id="restart-btn" class="restart">Restart Simulation</button>
+    </div>
+
+    <script>
+        // Main state variables
+        let currentGeneration = 1;
+        let selectedPumpkins = [];
+        let pumpkins = [];
+        let bestSize = 0;
+        let bestRoundness = 0;
+        let bestSmoothness = 0;
+        let bestColorScore = 0;
+        
+        // Pumpkin class to represent each pumpkin
+        class Pumpkin {
+            constructor(size, roundness, bumpiness, color) {
+                this.size = size;           // 1-10 scale
+                this.roundness = roundness; // 1-10 scale, 10 being perfectly round
+                this.bumpiness = bumpiness; // 1-10 scale, 10 being very bumpy, 1 being smooth
+                this.smoothness = 11 - bumpiness; // 1-10 scale, 10 being perfectly smooth
+                this.color = color || this.generateColor(); // Color in HSL format
+                this.colorScore = this.calculateColorScore(); // How close to perfect orange (1-10)
+                
+                // Calculate effective size based on roundness (surface area)
+                this.calculateDisplayedSize();
+                
+                this.selected = false;
+            }
+            
+            // Calculate effective size based on roundness (surface area)
+            calculateDisplayedSize() {
+                // Adjust size based on roundness - less round pumpkins appear larger
+                const roundnessFactor = this.roundness / 10; // 0.1 to 1
+                const stretchFactor = 1 + (1 - roundnessFactor) * 0.8; // 1 to 1.8
+                
+                // Base size
+                const baseSize = 30 + (this.size * 10);
+                
+                // Calculate dimensions - oblong pumpkins are wider but same height
+                const width = baseSize * stretchFactor;
+                const height = baseSize;
+                
+                // Calculate visual size (surface area) 
+                const visualArea = Math.PI * (width/2) * (height/2); // Area of ellipse
+                
+                // Scale displayed size based on area - we divide by a factor to get a nice 1-10 scale
+                this.displayedSize = Math.sqrt(visualArea) / 10;
+            }
+            
+            // Generate a random pumpkin color (oranges and yellows)
+            generateColor() {
+                const hue = Math.floor(Math.random() * 30) + 20; // 20-50 (orange-yellow range)
+                const saturation = Math.floor(Math.random() * 20) + 80; // 80-100%
+                const lightness = Math.floor(Math.random() * 15) + 45; // 45-60%
+                return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+            }
+            
+            // Calculate how close the color is to "perfect orange"
+            // Perfect orange is around hsl(25, 100%, 50%)
+            calculateColorScore() {
+                // Extract HSL values from the color string
+                const hslMatch = this.color.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+                if (!hslMatch) return 5; // Default middle score if parsing fails
+                
+                const hue = parseInt(hslMatch[1]);
+                const saturation = parseInt(hslMatch[2]);
+                const lightness = parseInt(hslMatch[3]);
+                
+                // Calculate distance from perfect orange (25, 100, 50)
+                // Weight hue more heavily as it's most important for orange
+                const hueDist = Math.abs(hue - 25) / 30; // Normalize to 0-1 range (30 degree range)
+                const satDist = Math.abs(saturation - 100) / 20; // Normalize
+                const lightDist = Math.abs(lightness - 50) / 15; // Normalize
+                
+                // Calculate score (10 = perfect match, 1 = furthest)
+                const distanceScore = 1 - ((hueDist * 0.7) + (satDist * 0.15) + (lightDist * 0.15));
+                return 1 + (distanceScore * 9); // Scale to 1-10
+            }
+            
+            // Calculate a score based on size, roundness, smoothness and color
+            get score() {
+                return (this.displayedSize * 0.5) + (this.roundness * 0.2) + (this.smoothness * 0.15) + (this.colorScore * 0.15);
+            }
+        }
+        
+        // Initialize the simulation
+        function initSimulation() {
+            currentGeneration = 1;
+            selectedPumpkins = [];
+            pumpkins = [];
+            bestSize = 0;
+            bestRoundness = 0;
+            bestSmoothness = 0;
+            bestColorScore = 0;
+            
+            // Create 10 random pumpkins for first generation
+            for (let i = 0; i < 10; i++) {
+                // More challenging starting values - wider range with more lower values
+                const size = 1 + Math.random() * 6; // 1-7 scale (reduced from 2-9)
+                const roundness = 1 + Math.random() * 6; // 1-7 scale (reduced from 2-9)
+                const bumpiness = 3 + Math.random() * 7; // 3-10 scale (more bumpy starting pumpkins)
+                const pumpkin = new Pumpkin(size, roundness, bumpiness);
+                pumpkins.push(pumpkin);
+                
+                // Update best metrics
+                updateBestMetrics(size, roundness, bumpiness, pumpkin.colorScore);
+            }
+            
+            updateGenerationIndicators();
+            renderPumpkins();
+            updateStatusMessage("Select two parent pumpkins to begin breeding!");
+            document.getElementById('breed-btn').disabled = true;
+        }
+        
+        // Update the displayed best metrics
+        function updateBestMetrics(size, roundness, bumpiness, colorScore) {
+            if (size > bestSize) {
+                bestSize = size;
+                document.getElementById('best-size').textContent = bestSize.toFixed(1);
+            }
+            
+            if (roundness > bestRoundness) {
+                bestRoundness = roundness;
+                document.getElementById('best-roundness').textContent = bestRoundness.toFixed(1);
+            }
+            
+            // Calculate smoothness from bumpiness
+            const smoothness = 11 - bumpiness;
+            if (smoothness > bestSmoothness) {
+                bestSmoothness = smoothness;
+                document.getElementById('best-smoothness').textContent = bestSmoothness.toFixed(1);
+            }
+            
+            if (colorScore > bestColorScore) {
+                bestColorScore = colorScore;
+                document.getElementById('best-color').textContent = bestColorScore.toFixed(1);
+            }
+        }
+        
+        // Generate a new generation based on selected parents
+        function breedNewGeneration() {
+            if (selectedPumpkins.length !== 2) return;
+            
+            const parent1 = pumpkins[selectedPumpkins[0]];
+            const parent2 = pumpkins[selectedPumpkins[1]];
+            
+            // Create 7 new offspring with traits between the parents
+            const newPumpkins = [];
+            
+            // Keep the parents in the new generation
+            newPumpkins.push(new Pumpkin(parent1.size, parent1.roundness, parent1.bumpiness, parent1.color));
+            newPumpkins.push(new Pumpkin(parent2.size, parent2.roundness, parent2.bumpiness, parent2.color));
+            
+            // Generate 7 offspring with traits between parents
+            for (let i = 0; i < 7; i++) {
+                // Random mixing of parent traits with INCREASED mutation for more variability
+                const mixRatio = Math.random();
+                const mutationFactor = 0.6; // Increased mutation factor for more randomness
+                
+                // Basic trait inheritance
+                let size = (parent1.size * mixRatio) + (parent2.size * (1 - mixRatio));
+                let roundness = (parent1.roundness * mixRatio) + (parent2.roundness * (1 - mixRatio));
+                let bumpiness = (parent1.bumpiness * mixRatio) + (parent2.bumpiness * (1 - mixRatio));
+                
+                // Add significant random mutation (luck element)
+                size += (Math.random() - 0.5) * mutationFactor * 10;
+                roundness += (Math.random() - 0.5) * mutationFactor * 10;
+                bumpiness += (Math.random() - 0.5) * mutationFactor * 10;
+                
+                // Occasional large mutations (10% chance) - increased from 5%
+                if (Math.random() < 0.10) {
+                    // Pick a random trait to have a big jump (positive or negative)
+                    const trait = Math.floor(Math.random() * 3);
+                    const jumpDirection = Math.random() < 0.5 ? -1 : 1;
+                    const jumpSize = 3 + Math.random() * 3; // Jump by 3-6 points (increased from 2-4)
+                    
+                    if (trait === 0) size += jumpDirection * jumpSize;
+                    else if (trait === 1) roundness += jumpDirection * jumpSize;
+                    else bumpiness += jumpDirection * jumpSize;
+                }
+                
+                // Ensure values stay within range
+                size = Math.max(1, Math.min(10, size));
+                roundness = Math.max(1, Math.min(10, roundness));
+                bumpiness = Math.max(1, Math.min(10, bumpiness));
+                
+                // Color inheritance and mutation
+                let newColor;
+                if (Math.random() < 0.6) { // Reduced from 0.7 for more color variation
+                    // 60% chance to inherit color from one parent
+                    newColor = Math.random() < 0.5 ? parent1.color : parent2.color;
+                } else {
+                    // 40% chance for a new random color
+                    newColor = new Pumpkin().generateColor();
+                }
+                
+                const pumpkin = new Pumpkin(size, roundness, bumpiness, newColor);
+                newPumpkins.push(pumpkin);
+                
+                // Update best metrics
+                updateBestMetrics(size, roundness, bumpiness, pumpkin.colorScore);
+            }
+            
+            // Move to next generation
+            currentGeneration++;
+            pumpkins = newPumpkins;
+            selectedPumpkins = [];
+            
+            updateGenerationIndicators();
+            renderPumpkins();
+            document.getElementById('breed-btn').disabled = true;
+            
+            if (currentGeneration > 4) { // Changed from 5 to 4
+                endSimulation();
+            } else {
+                updateStatusMessage("Generation " + currentGeneration + ": Select two parent pumpkins for breeding!");
+            }
+        }
+        
+        // End the simulation after 4 generations
+        function endSimulation() {
+            // Find the best overall pumpkin in the final generation
+            let bestPumpkinIndex = 0;
+            let bestScore = 0;
+            let bestPumpkin = null;
+            
+            pumpkins.forEach((pumpkin, index) => {
+                if (pumpkin.score > bestScore) {
+                    bestScore = pumpkin.score;
+                    bestPumpkinIndex = index;
+                    bestPumpkin = pumpkin;
+                }
+            });
+            
+            // Use the stats of the single best pumpkin for the final message
+            if (bestPumpkin) {
+                updateStatusMessage("Simulation complete! Your best pumpkin had size: " + 
+                    bestPumpkin.displayedSize.toFixed(1) + ", roundness: " + bestPumpkin.roundness.toFixed(1) + 
+                    ", smoothness: " + bestPumpkin.smoothness.toFixed(1) +
+                    ", and orange score: " + bestPumpkin.colorScore.toFixed(1) +
+                    " (Total score: " + bestPumpkin.score.toFixed(2) + ")");
+            } else {
+                updateStatusMessage("Simulation complete! No pumpkins were bred successfully.");
+            }
+            
+            // Highlight the best pumpkin
+            renderPumpkins();
+            const pumpkinElements = document.querySelectorAll('.pumpkin');
+            if (pumpkinElements[bestPumpkinIndex]) {
+                pumpkinElements[bestPumpkinIndex].style.outline = '6px dashed gold';
+                pumpkinElements[bestPumpkinIndex].style.outlineOffset = '5px';
+            }
+        }
+        
+        // Update the generation indicators
+        function updateGenerationIndicators() {
+            const indicators = document.querySelectorAll('.generation-indicator');
+            indicators.forEach((indicator, index) => {
+                if (index + 1 === currentGeneration) {
+                    indicator.classList.add('active');
+                } else {
+                    indicator.classList.remove('active');
+                }
+            });
+        }
+        
+        // Update the status message
+        function updateStatusMessage(message) {
+            document.getElementById('status-message').textContent = message;
+        }
+        
+        // Render all pumpkins
+        function renderPumpkins() {
+            const container = document.getElementById('pumpkins');
+            container.innerHTML = '';
+            
+            pumpkins.forEach((pumpkin, index) => {
+                const pumpkinEl = document.createElement('div');
+                pumpkinEl.className = 'pumpkin';
+                pumpkinEl.dataset.index = index;
+                
+                if (selectedPumpkins.includes(index)) {
+                    pumpkinEl.classList.add('selected');
+                }
+                
+                // Make sure displayedSize is calculated before rendering
+                if (pumpkin.displayedSize === undefined) {
+                    pumpkin.calculateDisplayedSize();
+                }
+                
+                // Create SVG pumpkin using pumpkin object properties
+                const baseSize = 30 + (pumpkin.size * 10);
+                const roundnessFactor = pumpkin.roundness / 10;
+                const stretchFactor = 1 + (1 - roundnessFactor) * 0.8;
+                const width = baseSize * stretchFactor;
+                const height = baseSize;
+                
+                const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                svg.setAttribute('width', width + 20);
+                svg.setAttribute('height', height + 30);
+                svg.setAttribute('viewBox', `0 0 ${width + 20} ${height + 30}`);
+                
+                // Draw stem
+                const stem = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                stem.setAttribute('x', width / 2 + 5);
+                stem.setAttribute('y', 5);
+                stem.setAttribute('width', 8);
+                stem.setAttribute('height', 15);
+                stem.setAttribute('fill', '#3d5e32');
+                stem.setAttribute('transform', `rotate(${Math.random() * 20 - 10} ${width/2 + 9} 20)`);
+                svg.appendChild(stem);
+                
+                // Draw pumpkin body with bumpy outline
+                // For bumpy pumpkins, we'll use a path with bumpy curves instead of an ellipse
+                if (pumpkin.bumpiness > 1) {
+                    const pumpkinPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    
+                    // Calculate center and radius
+                    const cx = width / 2 + 10;
+                    const cy = height / 2 + 15;
+                    const rx = width / 2;
+                    const ry = height / 2;
+                    
+                    // Create a smoother path with Bezier curves
+                    let pathData = "";
+                    
+                    // More precise calculation for number of bumps
+                    // Higher bumpiness = more bumps, scaled properly
+                    const numBumps = Math.max(6, Math.floor(6 + (pumpkin.bumpiness * 0.4)));
+                    
+                    // More precise scaling of bump amplitude
+                    // Higher bumpiness = more pronounced bumps
+                    const maxBumpFactor = height / 6; // Maximum possible bump size
+                    const bumpAmplitude = maxBumpFactor * (pumpkin.bumpiness / 10);
+                    
+                    // Generate the first point
+                    let startX = cx + rx;
+                    let startY = cy;
+                    pathData = `M ${startX} ${startY}`;
+                    
+                    // Create bumpy outline using quadratic Bezier curves
+                    for (let i = 0; i < numBumps; i++) {
+                        // Calculate the angle for this segment
+                        const startAngle = (i / numBumps) * Math.PI * 2;
+                        const endAngle = ((i + 1) / numBumps) * Math.PI * 2;
+                        
+                        // Calculate end point of this segment
+                        const endX = cx + rx * Math.cos(endAngle);
+                        const endY = cy + ry * Math.sin(endAngle);
+                        
+                        // Calculate middle angle
+                        const midAngle = (startAngle + endAngle) / 2;
+                        
+                        // Calculate bump point (perpendicular to ellipse at midAngle)
+                        // Bumpiness directly affects the size of the bump
+                        const bumpFactor = bumpAmplitude * (0.8 + Math.random() * 0.4); // Some randomness
+                        const bumpX = cx + (rx + bumpFactor) * Math.cos(midAngle);
+                        const bumpY = cy + (ry + bumpFactor) * Math.sin(midAngle);
+                        
+                        // Add the curved segment with a single control point (quadratic bezier)
+                        pathData += ` Q ${bumpX} ${bumpY}, ${endX} ${endY}`;
+                        
+                        // Update start point for next segment
+                        startX = endX;
+                        startY = endY;
+                    }
+                    
+                    pathData += " Z"; // Close the path
+                    pumpkinPath.setAttribute('d', pathData);
+                    pumpkinPath.setAttribute('fill', pumpkin.color);
+                    svg.appendChild(pumpkinPath);
+                } else {
+                    // For perfectly smooth pumpkins (bumpiness = 1), use an ellipse
+                    const pumpkinBody = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+                    pumpkinBody.setAttribute('cx', width / 2 + 10);
+                    pumpkinBody.setAttribute('cy', height / 2 + 15);
+                    pumpkinBody.setAttribute('rx', width / 2);
+                    pumpkinBody.setAttribute('ry', height / 2);
+                    pumpkinBody.setAttribute('fill', pumpkin.color);
+                    svg.appendChild(pumpkinBody);
+                }
+                
+                pumpkinEl.appendChild(svg);
+                
+                // Add stats label
+                const statsEl = document.createElement('div');
+                statsEl.className = 'pumpkin-stats';
+                
+                // Ensure valid displayedSize before showing
+                const sizeToDisplay = pumpkin.displayedSize !== undefined ? 
+                                     pumpkin.displayedSize.toFixed(1) : 
+                                     pumpkin.size.toFixed(1);
+                
+                // Show smoothness value instead of bumpiness
+                statsEl.innerHTML = `Size: ${sizeToDisplay}<br>Round: ${pumpkin.roundness.toFixed(1)}<br>Smooth: ${pumpkin.smoothness.toFixed(1)}<br>Orange: ${pumpkin.colorScore.toFixed(1)}`;
+                
+                pumpkinEl.appendChild(statsEl);
+                pumpkinEl.style.marginBottom = "40px"; // Ensure enough space for stats
+                
+                // Add click handler for selection
+                pumpkinEl.addEventListener('click', () => selectPumpkin(index));
+                
+                container.appendChild(pumpkinEl);
+            });
+        }
+        
+        // Handle pumpkin selection
+        function selectPumpkin(index) {
+            if (currentGeneration > 5) return; // Simulation ended
+            
+            const pumpkinIndex = selectedPumpkins.indexOf(index);
+            
+            if (pumpkinIndex !== -1) {
+                // Deselect if already selected
+                selectedPumpkins.splice(pumpkinIndex, 1);
+            } else {
+                // Select if not already selected and less than 2 are selected
+                if (selectedPumpkins.length < 2) {
+                    selectedPumpkins.push(index);
+                } else {
+                    // Replace first selection if already have 2
+                    selectedPumpkins.shift();
+                    selectedPumpkins.push(index);
+                }
+            }
+            
+            renderPumpkins();
+            
+            // Enable/disable breed button
+            document.getElementById('breed-btn').disabled = selectedPumpkins.length !== 2;
+            
+            if (selectedPumpkins.length === 2) {
+                updateStatusMessage("Ready to breed! Click the 'Breed Selected Pumpkins' button.");
+            } else {
+                updateStatusMessage(`Select ${2 - selectedPumpkins.length} more pumpkin(s) to breed.`);
+            }
+        }
+        
+        // Event listeners
+        document.getElementById('breed-btn').addEventListener('click', breedNewGeneration);
+        document.getElementById('restart-btn').addEventListener('click', initSimulation);
+        
+        // Start the simulation
+        initSimulation();
+    </script>
+</body>
+</html>
