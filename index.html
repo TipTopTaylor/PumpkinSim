@@ -203,7 +203,8 @@
                 const visualArea = Math.PI * (width/2) * (height/2); // Area of ellipse
                 
                 // Scale displayed size based on area - we divide by a factor to get a nice 1-10 scale
-                this.displayedSize = Math.sqrt(visualArea) / 10;
+                // This is the key change: Cap the displayedSize at exactly 10
+                this.displayedSize = Math.min(10, Math.sqrt(visualArea) / 10);
             }
             
             // Generate a random pumpkin color (oranges and yellows)
